@@ -34,13 +34,13 @@ bun install
 
 ### Environment Setup
 
-Copy the example environment file for the API:
+Copy the root example environment file and fill in your values:
 
 ```bash
-cp apps/apis/.env.example apps/apis/.env
+cp .env.example .env
 ```
 
-Update `apps/apis/.env` with your database connection string and other settings.
+Update `.env` with your database connection string and other settings. This single file is used by all apps and packages.
 
 ### Database Setup
 
