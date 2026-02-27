@@ -4,33 +4,32 @@ A full-stack monorepo using Turborepo with SolidJS, Hono, Drizzle ORM, and Bette
 
 ## Stack
 
+- **Runtime & Package Manager**: [Bun](https://bun.sh/)
 - **Build System**: [Turborepo](https://turbo.build/)
-- **Package Manager**: [pnpm](https://pnpm.io/)
 - **Linter/Formatter**: [Biome](https://biomejs.dev/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 
 ## Apps
 
 - `apps/web` - [SolidJS](https://www.solidjs.com/) frontend with [Vite](https://vitejs.dev/)
-- `apps/apis` - [Hono](https://hono.dev/) backend API
+- `apps/apis` - [Hono](https://hono.dev/) backend API (runs natively on Bun)
 
 ## Packages
 
-- `packages/db` - Database client using [Drizzle ORM](https://orm.drizzle.team/) with PostgreSQL
+- `packages/db` - Database client using [Drizzle ORM](https://orm.drizzle.team/) with PostgreSQL via Bun's native SQL driver
 - `packages/types` - Shared TypeScript types
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js >= 20
-- pnpm >= 9
+- Bun >= 1.1.0
 - PostgreSQL database
 
 ### Installation
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### Environment Setup
@@ -47,38 +46,38 @@ Update `apps/apis/.env` with your database connection string and other settings.
 
 ```bash
 # Push schema to database
-pnpm db:push
+bun db:push
 
 # Or generate and run migrations
-pnpm db:generate
-pnpm db:migrate
+bun db:generate
+bun db:migrate
 ```
 
 ### Development
 
 ```bash
 # Run all apps in development mode
-pnpm dev
+bun dev
 
 # Run specific app
-pnpm --filter @template/web dev
-pnpm --filter @template/apis dev
+bun --filter @template/web dev
+bun --filter @template/apis dev
 ```
 
 ### Build
 
 ```bash
-pnpm build
+bun run build
 ```
 
 ### Lint & Format
 
 ```bash
 # Check all files
-pnpm check
+bun check
 
 # Format all files
-pnpm format
+bun format
 ```
 
 ## Auth
