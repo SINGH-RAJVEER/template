@@ -1,0 +1,21 @@
+FROM oven/bun:1-alpine AS base
+WORKDIR /app
+
+# Install dependencies
+COPY package.json bun.lockb* ./
+COPY apps/apis/package.json ./apps/apis/
+COPY packages/db/package.json ./packages/db/
+COPY packages/types/package.json ./packages/types/
+RUN bun install --frozen-lockfile
+
+# Copy source files
+COPY tsconfig.json ./
+COPY packages/db ./packages/db
+COPY packages/types ./packages/types
+COPY apps/apis ./apps/apis
+
+WORKDIR /app/apps/apis
+
+EXPOSE 3001
+
+CMD ["bun", "src/index.ts"]
