@@ -9,6 +9,7 @@ export default {
   schema: "../../packages/db/src/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
+  driver: "bun-sql",
   dbCredentials: {
     url: databaseUrl,
   },

@@ -16,6 +16,7 @@ build/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+bun-debug.log*
 
 # OS files
 .DS_Store
