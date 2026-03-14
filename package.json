@@ -11,9 +11,7 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:push": "turbo run db:push",
-    "format-and-lint": "biome check .",
-    "format-and-lint:fix": "biome check . --write"
+    "db:push": "turbo run db:push"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
