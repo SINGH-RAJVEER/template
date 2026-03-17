@@ -1,18 +1,18 @@
-import { type Component, createSignal } from "solid-js";
+import { type FormEvent, useState } from "react";
 import { authClient } from "../lib/auth-client";
 
-export const SignIn: Component = () => {
-  const [email, setEmail] = createSignal("");
-  const [password, setPassword] = createSignal("");
-  const [error, setError] = createSignal<string | null>(null);
+export const SignIn = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: Event) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     const { error: authError } = await authClient.signIn.email({
-      email: email(),
-      password: password(),
+      email,
+      password,
       callbackURL: "/",
     });
 
@@ -22,32 +22,32 @@ export const SignIn: Component = () => {
   };
 
   return (
-    <div style={{ "max-width": "400px", margin: "4rem auto", padding: "2rem" }}>
+    <div style={{ maxWidth: "400px", margin: "4rem auto", padding: "2rem" }}>
       <h2>Sign In</h2>
       <form onSubmit={handleSubmit}>
-        <div style={{ "margin-bottom": "1rem" }}>
-          <label for="email">Email</label>
+        <div style={{ marginBottom: "1rem" }}>
+          <label htmlFor="email">Email</label>
           <input
             id="email"
             type="email"
-            value={email()}
-            onInput={(e) => setEmail(e.currentTarget.value)}
+            value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)}
             required
-            style={{ display: "block", width: "100%", padding: "0.5rem", "margin-top": "0.25rem" }}
+            style={{ display: "block", width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </div>
-        <div style={{ "margin-bottom": "1rem" }}>
-          <label for="password">Password</label>
+        <div style={{ marginBottom: "1rem" }}>
+          <label htmlFor="password">Password</label>
           <input
             id="password"
             type="password"
-            value={password()}
-            onInput={(e) => setPassword(e.currentTarget.value)}
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
             required
-            style={{ display: "block", width: "100%", padding: "0.5rem", "margin-top": "0.25rem" }}
+            style={{ display: "block", width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </div>
-        {error() && <p style={{ color: "red" }}>{error()}</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
         <button type="submit" style={{ padding: "0.5rem 1rem" }}>
           Sign In
         </button>

@@ -1,9 +1,9 @@
 import path from "node:path";
 import { defineConfig } from "vite";
-import solidPlugin from "vite-plugin-solid";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [react()],
   envDir: path.resolve(__dirname, "../.."),
   server: {
     port: 3000,
