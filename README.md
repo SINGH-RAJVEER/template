@@ -1,6 +1,6 @@
 # Template Monorepo
 
-A full-stack monorepo using Turborepo with SolidJS, Hono, Drizzle ORM, and Better Auth.
+A full-stack monorepo using Turborepo with React, Hono, Drizzle ORM, and Better Auth.
 
 ## Stack
 
@@ -11,7 +11,7 @@ A full-stack monorepo using Turborepo with SolidJS, Hono, Drizzle ORM, and Bette
 
 ## Apps
 
-- `apps/web` - [SolidJS](https://www.solidjs.com/) frontend with [Vite](https://vitejs.dev/)
+- `apps/web` - [React](https://react.dev/) frontend with [Vite](https://vitejs.dev/)
 - `apps/apis` - [Hono](https://hono.dev/) backend API (runs natively on Bun)
 
 ## Packages

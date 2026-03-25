@@ -1,26 +1,23 @@
-import { type Component, createSignal } from "solid-js";
+import { type FormEvent, useState } from "react";
 import { authClient } from "../lib/auth-client";
 
-export const SignIn: Component = () => {
-    const [email, setEmail] = createSignal("");
-    const [password, setPassword] = createSignal("");
-    const [error, setError] = createSignal<string | null>(null);
+export const SignIn = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: Event) => {
-        e.preventDefault();
-        setError(null);
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
 
-        const { error: authError } = await authClient.signIn.email({
-            email: email(),
-            password: password(),
-            callbackURL: "/",
-        });
+    const { error: authError } = await authClient.signIn.email({
+      email,
+      password,
+      callbackURL: "/",
+    });
 
-        if (authError) {
-            setError(authError.message ?? "Sign in failed");
-        }
-    };
-
+      if (authError) setError(authError.message ?? "Sign in failed");
+  };
     return (
         <div style={{ "max-width": "400px", margin: "4rem auto", padding: "2rem" }}>
             <h2>Sign In</h2>
