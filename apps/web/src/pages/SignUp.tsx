@@ -18,10 +18,10 @@ export const SignUp = () => {
       callbackURL: "/",
     });
 
-    if (authError) {
-      setError(authError.message ?? "Sign up failed");
-    }
-  };
+        if (authError) {
+            setError(authError.message ?? "Sign up failed");
+        }
+    };
 
   return (
     <div style={{ maxWidth: "400px", margin: "4rem auto", padding: "2rem" }}>
