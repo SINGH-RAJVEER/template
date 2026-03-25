@@ -1,5 +1,6 @@
 {
     "ui": "tui",
+    "globalDotEnv": [".env"],
     "tasks": {
         "build": {
             "dependsOn": ["^build"],
