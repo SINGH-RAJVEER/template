@@ -11,7 +11,7 @@ A full-stack monorepo using Turborepo with React, Hono, Drizzle ORM, and Better 
 
 ## Apps
 
-- `apps/web` - [React](https://react.dev/) frontend with [Vite](https://vitejs.dev/)
+- `apps/web` - [React 19](https://react.dev/) frontend with [Vite](https://vitejs.dev/) and the [React Compiler](https://react.dev/learn/react-compiler)
 - `apps/apis` - [Hono](https://hono.dev/) backend API (runs natively on Bun)
 
 ## Packages
