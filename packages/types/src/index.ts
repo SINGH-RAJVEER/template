@@ -1,5 +1,5 @@
 // Auth types
-export type { User, Session } from "./auth";
+export type { AuthSession, Session, User } from "./auth";
 
 // API types
 export type { ApiResponse, PaginatedResponse } from "./api";

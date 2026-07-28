@@ -6,7 +6,7 @@
     },
     "files": {
         "ignoreUnknown": false,
-        "ignore": ["**/node_modules/**", "**/dist/**", "**/.turbo/**", "**/build/**"]
+        "ignore": ["**/node_modules/**", "**/dist/**", "**/.nx/**", "**/build/**"]
     },
     "formatter": {
         "enabled": true,

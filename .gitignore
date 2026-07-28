@@ -5,7 +5,9 @@ node_modules/
 # Build outputs
 dist/
 build/
-.turbo/
+.nx/
+.devenv/
+.jj/
 
 # Environment files
 .env
@@ -25,6 +27,3 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-
-# Drizzle
-drizzle/

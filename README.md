@@ -1,29 +1,34 @@
 # Template Monorepo
 
-A full-stack monorepo using Turborepo with React, Hono, Drizzle ORM, and Better Auth.
+A full-stack monorepo with a React frontend and a Go API backed by PostgreSQL.
 
 ## Stack
 
-- **Runtime & Package Manager**: [Bun](https://bun.sh/)
-- **Build System**: [Turborepo](https://turbo.build/)
+- **Frontend Runtime & Package Manager**: [Bun](https://bun.sh/)
+- **Backend Runtime**: [Go](https://go.dev/)
+- **Build System**: [Nx](https://nx.dev/)
+- **Type Checker**: [TypeScript 7 native preview](https://github.com/microsoft/typescript-go)
 - **Linter/Formatter**: [Biome](https://biomejs.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: PostgreSQL via [pgx](https://github.com/jackc/pgx)
+- **UI**: [shadcn/ui](https://ui.shadcn.com/) with Tailwind CSS v4
 
 ## Apps
 
 - `apps/web` - [React 19](https://react.dev/) frontend with [Vite](https://vitejs.dev/) and the [React Compiler](https://react.dev/learn/react-compiler)
-- `apps/apis` - [Hono](https://hono.dev/) backend API (runs natively on Bun)
+- `apps/apis` - Go HTTP API with authentication
 
 ## Packages
 
-- `packages/db` - Database client using [Drizzle ORM](https://orm.drizzle.team/) with PostgreSQL via Bun's native SQL driver
 - `packages/types` - Shared TypeScript types
+- `packages/database` - Go database models, PostgreSQL store, and embedded schema
+- `packages/ui` - Shared shadcn components, utilities, and Tailwind theme
 
 ## Getting Started
 
 ### Prerequisites
 
 - Bun >= 1.1.0
+- Go >= 1.24
 - PostgreSQL database
 
 ### Installation
@@ -42,32 +47,56 @@ cp .env.example .env
 
 Update `.env` with your database connection string and other settings. This single file is used by all apps and packages.
 
-### Database Setup
-
-```bash
-# Push schema to database
-bun db:push
-
-# Or generate and run migrations
-bun db:generate
-bun db:migrate
-```
+The database package applies its idempotent schema from `packages/database/schema.sql` when the API starts.
 
 ### Development
 
 ```bash
-# Run all apps in development mode
+# PostgreSQL + API + web with live development processes
+just dev
+
+# PostgreSQL + production containers
+just docker
+```
+
+Both commands run in the foreground and expose the web app at `http://localhost:3000` and API at `http://localhost:3001`. `just docker` reads `.env` when present and otherwise uses `postgres` as its local database password.
+
+To stop detached services, use `devenv processes down` or `docker compose -f docker/docker-compose.yml down` respectively.
+
+Individual processes remain available when needed:
+
+```bash
+# Run all package development scripts without PostgreSQL
 bun dev
 
 # Run specific app
 bun --filter @template/web dev
 bun --filter @template/apis dev
+
+# Or run the API directly
+cd apps/apis && CGO_ENABLED=0 go run .
 ```
+
+### Devenv
+
+With [devenv](https://devenv.sh/) installed, one command provisions Go 1.26 and Bun, initializes a persistent PostgreSQL 18 database, and starts PostgreSQL, the API, and the web app in readiness order:
+
+```bash
+devenv up
+```
+
+PostgreSQL data is kept in devenv's project state. The API and web app remain available at `http://localhost:3001` and `http://localhost:3000`; the API automatically reloads when Go or schema files change.
 
 ### Build
 
 ```bash
 bun run build
+```
+
+TypeScript packages are checked with the pinned TypeScript 7 native preview:
+
+```bash
+bun run typecheck
 ```
 
 ### Lint & Format
@@ -80,19 +109,37 @@ bun check
 bun format
 ```
 
+## UI Components
+
+Both `apps/web/components.json` and `packages/ui/components.json` use shadcn's monorepo routing. Run component commands against the app; reusable UI is written to `packages/ui` automatically:
+
+```bash
+bunx shadcn@latest add dialog -c apps/web
+```
+
+Import shared components through package exports:
+
+```tsx
+import { Button } from "@template/ui/components/button";
+```
+
+The shared Tailwind v4 theme lives at `packages/ui/src/styles/globals.css` and is imported by the web entrypoint.
+
 ## Auth
 
-Authentication is handled by [Better Auth](https://www.better-auth.com/). The following features are configured:
+Authentication is implemented by the Go API with the following features:
 
-- Email & Password authentication
-- Session management via PostgreSQL
+- Bcrypt password hashing
+- Opaque, hashed session tokens stored in PostgreSQL
+- HttpOnly, SameSite session cookies
+- Trusted-origin CORS enforcement
 
 ### Auth Routes (API)
 
 - `POST /api/auth/sign-in/email` - Sign in with email/password
 - `POST /api/auth/sign-up/email` - Register with email/password
 - `POST /api/auth/sign-out` - Sign out
-- `GET /api/auth/session` - Get current session
+- `GET /api/auth/session` - Get the current session
 
 ### Protected Routes
 

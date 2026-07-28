@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.turbo/
-*.log
-.env
-.env.local
-.env.*.local
-drizzle/

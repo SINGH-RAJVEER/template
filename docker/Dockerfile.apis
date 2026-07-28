@@ -1,21 +1,25 @@
-FROM oven/bun:1-alpine AS base
-WORKDIR /app
+FROM golang:1.24-alpine AS builder
+WORKDIR /src
 
-# Install dependencies
-COPY package.json bun.lockb* ./
-COPY apps/apis/package.json ./apps/apis/
-COPY packages/db/package.json ./packages/db/
-COPY packages/types/package.json ./packages/types/
-RUN bun install --frozen-lockfile
+COPY packages/database/go.mod packages/database/go.sum* ./packages/database/
+WORKDIR /src/packages/database
+RUN go mod download
 
-# Copy source files
-COPY tsconfig.json ./
-COPY packages/db ./packages/db
-COPY packages/types ./packages/types
-COPY apps/apis ./apps/apis
+WORKDIR /src/apps/apis
+COPY apps/apis/go.mod apps/apis/go.sum ./
+RUN go mod download
 
-WORKDIR /app/apps/apis
+COPY packages/database/ /src/packages/database/
+COPY apps/apis/ /src/apps/apis/
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /apis .
+
+FROM alpine:3.22 AS runner
+RUN apk add --no-cache ca-certificates \
+    && addgroup -S app \
+    && adduser -S -G app app
+USER app
+COPY --from=builder /apis /app/apis
 
 EXPOSE 3001
 
-CMD ["bun", "src/index.ts"]
+CMD ["/app/apis"]

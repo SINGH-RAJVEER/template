@@ -10,11 +10,10 @@
         }
     },
     "scripts": {
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsgo --noEmit",
         "lint": "biome check src/"
     },
     "devDependencies": {
-        "@biomejs/biome": "1.9.4",
-        "typescript": "^5.7.3"
+        "@biomejs/biome": "1.9.4"
     }
 }

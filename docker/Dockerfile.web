@@ -2,14 +2,18 @@ FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* ./
+COPY apps/apis/package.json ./apps/apis/
 COPY apps/web/package.json ./apps/web/
+COPY packages/database/package.json ./packages/database/
 COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
 RUN bun install --frozen-lockfile
 
 # Copy source files
 COPY tsconfig.json ./
 COPY packages/types ./packages/types
+COPY packages/ui ./packages/ui
 COPY apps/web ./apps/web
 
 # Build-time env vars (passed via --build-arg)
@@ -21,6 +25,7 @@ RUN bun run build
 
 FROM nginx:alpine AS runner
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

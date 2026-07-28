@@ -1,11 +1,9 @@
 {
-    "name": "@template/apis",
+    "name": "@template/database",
     "private": true,
     "version": "0.0.1",
     "scripts": {
-        "dev": "CGO_ENABLED=0 go run .",
-        "build": "CGO_ENABLED=0 go build -o dist/apis .",
-        "start": "./dist/apis",
+        "build": "CGO_ENABLED=0 go build ./...",
         "test": "CGO_ENABLED=0 go test ./...",
         "typecheck": "CGO_ENABLED=0 go vet ./...",
         "lint": "CGO_ENABLED=0 go vet ./..."

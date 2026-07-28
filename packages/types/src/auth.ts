@@ -4,17 +4,21 @@ export interface User {
     email: string;
     emailVerified: boolean;
     image?: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Session {
     id: string;
     userId: string;
-    token: string;
-    expiresAt: Date;
+    expiresAt: string;
     ipAddress?: string | null;
     userAgent?: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface AuthSession {
+    user: User;
+    session: Session;
 }
