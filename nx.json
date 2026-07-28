@@ -23,5 +23,6 @@
             "dependsOn": ["^typecheck"],
             "cache": true
         }
-    }
+    },
+    "analytics": true
 }

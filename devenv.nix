@@ -39,15 +39,15 @@
   };
 
   processes.api = {
-    exec = "go run .";
-    cwd = "${config.git.root}/apps/apis";
+    exec = "go run ./cmd/api";
+    cwd = "${config.git.root}/apps/api";
     after = [ "devenv:processes:postgres" ];
     ready.http.get = {
       port = 3001;
       path = "/health";
     };
     watch = {
-      paths = [ ./apps/apis ./packages/database ];
+      paths = [ ./apps/api ];
       extensions = [ "go" "sql" "mod" "sum" ];
     };
   };

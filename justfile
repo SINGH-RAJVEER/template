@@ -10,4 +10,4 @@ dev:
 
 # Build and start PostgreSQL, the Go API, and nginx through Docker Compose.
 docker:
-    POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}" docker compose -f docker/docker-compose.yml up --build
+    POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}" docker compose -f docker/docker-compose.yml up --build --remove-orphans

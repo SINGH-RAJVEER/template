@@ -7,8 +7,6 @@ A full-stack monorepo with a React frontend and a Go API backed by PostgreSQL.
 - **Frontend Runtime & Package Manager**: [Bun](https://bun.sh/)
 - **Backend Runtime**: [Go](https://go.dev/)
 - **Build System**: [Nx](https://nx.dev/)
-- **Type Checker**: [TypeScript 7 native preview](https://github.com/microsoft/typescript-go)
-- **Linter/Formatter**: [Biome](https://biomejs.dev/)
 - **Database**: PostgreSQL via [pgx](https://github.com/jackc/pgx)
 - **UI**: [shadcn/ui](https://ui.shadcn.com/) with Tailwind CSS v4
 
@@ -17,11 +15,9 @@ A full-stack monorepo with a React frontend and a Go API backed by PostgreSQL.
 - `apps/web` - [React 19](https://react.dev/) frontend with [Vite](https://vitejs.dev/) and the [React Compiler](https://react.dev/learn/react-compiler)
 - `apps/apis` - Go HTTP API with authentication
 
-## Packages
+## Libraries
 
-- `packages/types` - Shared TypeScript types
-- `packages/database` - Go database models, PostgreSQL store, and embedded schema
-- `packages/ui` - Shared shadcn components, utilities, and Tailwind theme
+- `libs/ui` - Shared shadcn components, utilities, and Tailwind theme
 
 ## Getting Started
 
@@ -45,9 +41,9 @@ Copy the root example environment file and fill in your values:
 cp .env.example .env
 ```
 
-Update `.env` with your database connection string and other settings. This single file is used by all apps and packages.
+Update `.env` with your database connection string and other settings. This single file is used by all apps and libraries.
 
-The database package applies its idempotent schema from `packages/database/schema.sql` when the API starts.
+The database library applies its idempotent schema from `libs/database/schema.sql` when the API starts.
 
 ### Development
 
@@ -66,7 +62,7 @@ To stop detached services, use `devenv processes down` or `docker compose -f doc
 Individual processes remain available when needed:
 
 ```bash
-# Run all package development scripts without PostgreSQL
+# Run all development scripts without PostgreSQL
 bun dev
 
 # Run specific app
@@ -74,7 +70,7 @@ bun --filter @template/web dev
 bun --filter @template/apis dev
 
 # Or run the API directly
-cd apps/apis && CGO_ENABLED=0 go run .
+cd apps/apis && go run .
 ```
 
 ### Devenv
@@ -93,7 +89,7 @@ PostgreSQL data is kept in devenv's project state. The API and web app remain av
 bun run build
 ```
 
-TypeScript packages are checked with the pinned TypeScript 7 native preview:
+TypeScript projects are checked with the pinned TypeScript 7 native preview:
 
 ```bash
 bun run typecheck
@@ -111,7 +107,7 @@ bun format
 
 ## UI Components
 
-Both `apps/web/components.json` and `packages/ui/components.json` use shadcn's monorepo routing. Run component commands against the app; reusable UI is written to `packages/ui` automatically:
+Both `apps/web/components.json` and `libs/ui/components.json` use shadcn's monorepo routing. Run component commands against the app; reusable UI is written to `libs/ui` automatically:
 
 ```bash
 bunx shadcn@latest add dialog -c apps/web
@@ -123,7 +119,7 @@ Import shared components through package exports:
 import { Button } from "@template/ui/components/button";
 ```
 
-The shared Tailwind v4 theme lives at `packages/ui/src/styles/globals.css` and is imported by the web entrypoint.
+The shared Tailwind v4 theme lives at `libs/ui/src/styles/globals.css` and is imported by the web entrypoint.
 
 ## Auth
 

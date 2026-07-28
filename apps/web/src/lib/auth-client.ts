@@ -1,11 +1,31 @@
-import type { AuthSession } from "@template/types";
 import { useEffect, useSyncExternalStore } from "react";
 
-const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 interface AuthError {
     code?: string;
     message: string;
+}
+
+interface AuthSession {
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        emailVerified: boolean;
+        image?: string | null;
+        createdAt: string;
+        updatedAt: string;
+    };
+    session: {
+        id: string;
+        userId: string;
+        expiresAt: string;
+        ipAddress?: string | null;
+        userAgent?: string | null;
+        createdAt: string;
+        updatedAt: string;
+    };
 }
 
 interface AuthState {
@@ -47,15 +67,18 @@ const request = async <T>(path: string, init?: RequestInit): Promise<AuthResult<
             credentials: "include",
             headers: {
                 "Content-Type": "application/json",
-                ...init?.headers,
-            },
+                ...init?.headers
+            }
         });
         const payload = (await response.json()) as T | AuthError;
         if (!response.ok) {
             const error = payload as AuthError;
             return {
                 data: null,
-                error: { code: error.code, message: error.message || "Request failed" },
+                error: {
+                    code: error.code,
+                    message: error.message || "Request failed"
+                }
             };
         }
         return { data: payload as T, error: null };
@@ -72,7 +95,7 @@ const refreshSession = () => {
             setAuthState({
                 data: result.data,
                 error: result.error,
-                isPending: false,
+                isPending: false
             });
         })
         .finally(() => {
@@ -84,7 +107,7 @@ const refreshSession = () => {
 const authenticate = async (path: string, credentials: Credentials | SignUpCredentials) => {
     const result = await request<AuthSession>(path, {
         method: "POST",
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(credentials)
     });
     if (result.data) {
         setAuthState({ data: result.data, error: null, isPending: false });
@@ -106,17 +129,17 @@ export const authClient = {
         return state;
     },
     signIn: {
-        email: (credentials: Credentials) => authenticate("/api/auth/sign-in/email", credentials),
+        email: (credentials: Credentials) => authenticate("/api/auth/sign-in/email", credentials)
     },
     signUp: {
         email: (credentials: SignUpCredentials) =>
-            authenticate("/api/auth/sign-up/email", credentials),
+            authenticate("/api/auth/sign-up/email", credentials)
     },
     signOut: async () => {
         const result = await request<{ success: boolean }>("/api/auth/sign-out", {
-            method: "POST",
+            method: "POST"
         });
         if (result.data) setAuthState({ data: null, error: null, isPending: false });
         return result;
-    },
+    }
 };

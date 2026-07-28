@@ -1,12 +1,5 @@
 import { Button } from "@template/ui/components/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@template/ui/components/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@template/ui/components/card";
 import { Input } from "@template/ui/components/input";
 import { Label } from "@template/ui/components/label";
 import { type FormEvent, useState } from "react";
@@ -24,22 +17,21 @@ export const SignIn = () => {
         const { error: authError } = await authClient.signIn.email({
             email,
             password,
-            callbackURL: "/",
+            callbackURL: "/"
         });
 
         if (authError) setError(authError.message ?? "Sign in failed");
     };
 
     return (
-        <main className="grid min-h-screen place-items-center px-4 py-12">
-            <Card className="w-full max-w-md shadow-xl shadow-foreground/5">
+        <main className="app-shell auth-page">
+            <Card className="auth-card">
                 <form onSubmit={handleSubmit}>
                     <CardHeader>
-                        <CardTitle className="text-2xl">Welcome back</CardTitle>
-                        <CardDescription>Sign in with your email and password.</CardDescription>
+                        <CardTitle className="auth-title">Sign In</CardTitle>
                     </CardHeader>
-                    <CardContent className="mt-6 space-y-5">
-                        <div className="space-y-2">
+                    <CardContent className="auth-fields">
+                        <div className="form-field">
                             <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
@@ -50,7 +42,7 @@ export const SignIn = () => {
                                 required
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="form-field">
                             <Label htmlFor="password">Password</Label>
                             <Input
                                 id="password"
@@ -61,16 +53,15 @@ export const SignIn = () => {
                                 required
                             />
                         </div>
-                        {error && <p className="text-sm text-destructive">{error}</p>}
+                        {error && <p className="form-error">{error}</p>}
                     </CardContent>
-                    <CardFooter className="mt-6 flex-col items-stretch gap-4">
-                        <Button type="submit" className="w-full">
-                            Sign in
+                    <CardFooter className="auth-footer">
+                        <Button type="submit" className="auth-submit">
+                            Sign In
                         </Button>
-                        <p className="text-center text-sm text-muted-foreground">
-                            New here?{" "}
-                            <a className="font-medium text-foreground underline" href="/sign-up">
-                                Create an account
+                        <p className="auth-switch">
+                            <a className="auth-link" href="/sign-up">
+                                Sign Up
                             </a>
                         </p>
                     </CardFooter>
