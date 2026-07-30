@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const tokenKey = "auth_token";
 
 interface AuthError {
     code?: string;
@@ -17,15 +18,12 @@ interface AuthSession {
         createdAt: string;
         updatedAt: string;
     };
-    session: {
-        id: string;
-        userId: string;
-        expiresAt: string;
-        ipAddress?: string | null;
-        userAgent?: string | null;
-        createdAt: string;
-        updatedAt: string;
-    };
+}
+
+interface AuthResponse extends AuthSession {
+    token: string;
+    tokenType: "Bearer";
+    expiresAt: string;
 }
 
 interface AuthState {
@@ -62,11 +60,12 @@ const subscribe = (subscriber: () => void) => {
 
 const request = async <T>(path: string, init?: RequestInit): Promise<AuthResult<T>> => {
     try {
+        const token = localStorage.getItem(tokenKey);
         const response = await fetch(`${baseURL}${path}`, {
             ...init,
-            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 ...init?.headers
             }
         });
@@ -92,6 +91,7 @@ const refreshSession = () => {
 
     refreshRequest = request<AuthSession | null>("/api/auth/session")
         .then((result) => {
+            if (!result.data && !result.error) localStorage.removeItem(tokenKey);
             setAuthState({
                 data: result.data,
                 error: result.error,
@@ -105,12 +105,13 @@ const refreshSession = () => {
 };
 
 const authenticate = async (path: string, credentials: Credentials | SignUpCredentials) => {
-    const result = await request<AuthSession>(path, {
+    const result = await request<AuthResponse>(path, {
         method: "POST",
         body: JSON.stringify(credentials)
     });
     if (result.data) {
-        setAuthState({ data: result.data, error: null, isPending: false });
+        localStorage.setItem(tokenKey, result.data.token);
+        setAuthState({ data: { user: result.data.user }, error: null, isPending: false });
         if (credentials.callbackURL) window.location.assign(credentials.callbackURL);
     }
     return result;
@@ -139,7 +140,8 @@ export const authClient = {
         const result = await request<{ success: boolean }>("/api/auth/sign-out", {
             method: "POST"
         });
-        if (result.data) setAuthState({ data: null, error: null, isPending: false });
+        localStorage.removeItem(tokenKey);
+        setAuthState({ data: null, error: null, isPending: false });
         return result;
     }
 };

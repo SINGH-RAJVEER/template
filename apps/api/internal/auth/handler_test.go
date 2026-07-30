@@ -18,20 +18,17 @@ import (
 type fakeStore struct {
 	account      database.User
 	passwordHash string
-	session      database.AuthSession
-	token        string
 	registerErr  error
-	deletedToken string
 }
 
-func (s *fakeStore) Register(_ context.Context, name, email, passwordHash string, _ database.SessionMetadata, _ time.Duration) (database.AuthSession, string, error) {
+func (s *fakeStore) Register(_ context.Context, name, email, passwordHash string) (database.User, error) {
 	if s.registerErr != nil {
-		return database.AuthSession{}, "", s.registerErr
+		return database.User{}, s.registerErr
 	}
 	s.passwordHash = passwordHash
-	s.session.User.Name = name
-	s.session.User.Email = email
-	return s.session, s.token, nil
+	s.account.Name = name
+	s.account.Email = email
+	return s.account, nil
 }
 
 func (s *fakeStore) Credentials(_ context.Context, email string) (database.User, string, error) {
@@ -41,24 +38,15 @@ func (s *fakeStore) Credentials(_ context.Context, email string) (database.User,
 	return s.account, s.passwordHash, nil
 }
 
-func (s *fakeStore) CreateSession(_ context.Context, _ database.User, _ database.SessionMetadata, _ time.Duration) (database.AuthSession, string, error) {
-	return s.session, s.token, nil
-}
-
-func (s *fakeStore) Session(_ context.Context, token string) (database.AuthSession, error) {
-	if token != s.token {
-		return database.AuthSession{}, database.ErrNotFound
+func (s *fakeStore) User(_ context.Context, id string) (database.User, error) {
+	if id != s.account.ID {
+		return database.User{}, database.ErrNotFound
 	}
-	return s.session, nil
-}
-
-func (s *fakeStore) DeleteSession(_ context.Context, token string) error {
-	s.deletedToken = token
-	return nil
+	return s.account, nil
 }
 
 func testServer(store Store) http.Handler {
-	handler := NewHandler(store, Config{SessionTTL: 24 * time.Hour})
+	handler := NewHandler(store, Config{JWTSecret: "test-secret-that-is-at-least-32-characters", JWTTTL: 24 * time.Hour})
 	return apihttp.New(handler, "http://localhost:3000")
 }
 
@@ -74,10 +62,9 @@ func TestHealth(t *testing.T) {
 	}
 }
 
-func TestSignUpSetsSessionCookie(t *testing.T) {
+func TestSignUpReturnsJWT(t *testing.T) {
 	store := &fakeStore{
-		session: database.AuthSession{User: database.User{ID: "user-1"}, Session: database.Session{ID: "session-1"}},
-		token:   "raw-session-token",
+		account: database.User{ID: "user-1"},
 	}
 	request := httptest.NewRequest(http.MethodPost, "/api/auth/sign-up/email", bytes.NewBufferString(`{"name":"Ada","email":"ADA@example.com","password":"password123"}`))
 	response := httptest.NewRecorder()
@@ -86,18 +73,18 @@ func TestSignUpSetsSessionCookie(t *testing.T) {
 	if response.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", response.Code, response.Body.String())
 	}
-	if store.session.User.Email != "ada@example.com" {
-		t.Fatalf("expected normalized email, got %q", store.session.User.Email)
+	if store.account.Email != "ada@example.com" {
+		t.Fatalf("expected normalized email, got %q", store.account.Email)
 	}
 	if bcrypt.CompareHashAndPassword([]byte(store.passwordHash), []byte("password123")) != nil {
 		t.Fatal("password was not stored as a bcrypt hash")
 	}
-	cookies := response.Result().Cookies()
-	if len(cookies) != 1 || cookies[0].Name != SessionCookieName {
-		t.Fatalf("expected session cookie, got %#v", cookies)
+	var payload authResponse
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatal(err)
 	}
-	if !cookies[0].HttpOnly || cookies[0].SameSite != http.SameSiteLaxMode {
-		t.Fatal("session cookie is missing security attributes")
+	if payload.Token == "" || payload.TokenType != "Bearer" {
+		t.Fatalf("expected bearer JWT, got %#v", payload)
 	}
 }
 
@@ -124,22 +111,26 @@ func TestSignInRejectsInvalidPassword(t *testing.T) {
 	}
 }
 
-func TestMeRequiresValidSession(t *testing.T) {
-	store := &fakeStore{session: database.AuthSession{User: database.User{ID: "user-1", Name: "Ada"}}, token: "valid-token"}
+func TestMeRequiresValidJWT(t *testing.T) {
+	store := &fakeStore{account: database.User{ID: "user-1", Name: "Ada"}}
+	result, err := (&service{store: store, jwtSecret: []byte("test-secret-that-is-at-least-32-characters"), jwtTTL: time.Hour}).issueToken(store.account)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	unauthorizedRequest := httptest.NewRequest(http.MethodGet, "/api/me", nil)
 	unauthorizedResponse := httptest.NewRecorder()
 	testServer(store).ServeHTTP(unauthorizedResponse, unauthorizedRequest)
 	if unauthorizedResponse.Code != http.StatusUnauthorized {
-		t.Fatalf("expected missing cookie to return 401, got %d", unauthorizedResponse.Code)
+		t.Fatalf("expected missing bearer token to return 401, got %d", unauthorizedResponse.Code)
 	}
 
 	authorizedRequest := httptest.NewRequest(http.MethodGet, "/api/me", nil)
-	authorizedRequest.AddCookie(&http.Cookie{Name: SessionCookieName, Value: store.token})
+	authorizedRequest.Header.Set("Authorization", "Bearer "+result.Token)
 	authorizedResponse := httptest.NewRecorder()
 	testServer(store).ServeHTTP(authorizedResponse, authorizedRequest)
 	if authorizedResponse.Code != http.StatusOK {
-		t.Fatalf("expected valid session to return 200, got %d", authorizedResponse.Code)
+		t.Fatalf("expected valid JWT to return 200, got %d", authorizedResponse.Code)
 	}
 	var payload struct {
 		User database.User `json:"user"`
@@ -147,25 +138,36 @@ func TestMeRequiresValidSession(t *testing.T) {
 	if err := json.NewDecoder(authorizedResponse.Body).Decode(&payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload.User.ID != store.session.User.ID {
-		t.Fatalf("expected user %q, got %q", store.session.User.ID, payload.User.ID)
+	if payload.User.ID != store.account.ID {
+		t.Fatalf("expected user %q, got %q", store.account.ID, payload.User.ID)
 	}
 }
 
-func TestSignOutDeletesSession(t *testing.T) {
-	store := &fakeStore{token: "valid-token"}
+func TestMeRejectsExpiredJWT(t *testing.T) {
+	store := &fakeStore{account: database.User{ID: "user-1"}}
+	result, err := (&service{store: store, jwtSecret: []byte("test-secret-that-is-at-least-32-characters"), jwtTTL: -time.Hour}).issueToken(store.account)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	request.Header.Set("Authorization", "Bearer "+result.Token)
+	response := httptest.NewRecorder()
+	testServer(store).ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("expected expired JWT to return 401, got %d", response.Code)
+	}
+}
+
+func TestSignOutSucceeds(t *testing.T) {
+	store := &fakeStore{}
 	request := httptest.NewRequest(http.MethodPost, "/api/auth/sign-out", nil)
-	request.AddCookie(&http.Cookie{Name: SessionCookieName, Value: store.token})
 	response := httptest.NewRecorder()
 	testServer(store).ServeHTTP(response, request)
 	if response.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", response.Code)
 	}
-	if store.deletedToken != store.token {
-		t.Fatalf("expected token %q to be deleted, got %q", store.token, store.deletedToken)
-	}
-	if cookies := response.Result().Cookies(); len(cookies) != 1 || cookies[0].MaxAge >= 0 {
-		t.Fatal("expected the session cookie to be expired")
+	if strings.TrimSpace(response.Body.String()) != `{"success":true}` {
+		t.Fatalf("unexpected response: %s", response.Body.String())
 	}
 }
 
@@ -178,8 +180,8 @@ func TestCORS(t *testing.T) {
 	if allowedResponse.Code != http.StatusNoContent {
 		t.Fatalf("expected preflight status 204, got %d", allowedResponse.Code)
 	}
-	if allowedResponse.Header().Get("Access-Control-Allow-Credentials") != "true" {
-		t.Fatal("expected credentialed CORS response")
+	if !strings.Contains(allowedResponse.Header().Get("Access-Control-Allow-Headers"), "Authorization") {
+		t.Fatal("expected Authorization to be allowed by CORS")
 	}
 
 	blockedRequest := httptest.NewRequest(http.MethodGet, "/health", nil)

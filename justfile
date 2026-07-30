@@ -28,6 +28,9 @@ web:
 api:
     bun --filter @template/api dev
 
+# Run tests
+test:
+    CGO_ENABLED=0 bun run test
 # Typecheck TS files
 check:
     bun run typecheck

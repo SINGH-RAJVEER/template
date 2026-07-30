@@ -134,9 +134,11 @@ The shared Tailwind v4 theme lives at `libs/ui/src/styles/globals.css` and is im
 Authentication is implemented by the Go API with the following features:
 
 - Bcrypt password hashing
-- Opaque, hashed session tokens stored in PostgreSQL
-- HttpOnly, SameSite session cookies
+- Signed HS256 JSON Web Tokens with configurable expiration
+- Bearer-token authorization for protected endpoints
 - Trusted-origin CORS enforcement
+
+Set `JWT_SECRET` to a random value of at least 32 characters. See [`docs/authentication.md`](docs/authentication.md) for the request contract and security behavior.
 
 ## Routes
 
@@ -144,10 +146,9 @@ Authentication is implemented by the Go API with the following features:
 
 - `POST /api/auth/sign-in/email` - Sign in with email/password
 - `POST /api/auth/sign-up/email` - Register with email/password
-- `POST /api/auth/sign-out` - Sign out
-- `GET /api/auth/session` - Get the current session
+- `POST /api/auth/sign-out` - Complete client-side sign out
+- `GET /api/auth/session` - Resolve the current bearer token to a user
 
 ### Protected Routes
 
 - `GET /api/me` - Get current user info
-

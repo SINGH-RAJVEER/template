@@ -21,7 +21,6 @@ func cors(next http.Handler, webURL string) http.Handler {
 
 		if origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Add("Vary", "Origin")
 		}
 		if r.Method == http.MethodOptions {

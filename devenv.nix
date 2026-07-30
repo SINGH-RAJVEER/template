@@ -34,8 +34,8 @@
     WEB_URL = "http://localhost:3000";
     VITE_API_URL = "http://localhost:3001";
     PORT = "3001";
-    COOKIE_SECURE = "false";
-    SESSION_TTL = "168h";
+    JWT_SECRET = "local-development-jwt-secret-change-me";
+    JWT_TTL = "168h";
   };
 
   processes.api = {

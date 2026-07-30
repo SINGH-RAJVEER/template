@@ -26,8 +26,8 @@ services:
         environment:
             DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-template}
             WEB_URL: ${WEB_URL:-http://localhost:3000}
-            COOKIE_SECURE: ${COOKIE_SECURE:-false}
-            SESSION_TTL: ${SESSION_TTL:-168h}
+            JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+            JWT_TTL: ${JWT_TTL:-168h}
             PORT: 8000
         depends_on:
             postgres:

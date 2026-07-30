@@ -33,8 +33,8 @@ func main() {
 	defer store.Close()
 
 	authHandler := auth.NewHandler(store, auth.Config{
-		CookieSecure: cfg.CookieSecure,
-		SessionTTL:   cfg.SessionTTL,
+		JWTSecret: cfg.JWTSecret,
+		JWTTTL:    cfg.JWTTTL,
 	})
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

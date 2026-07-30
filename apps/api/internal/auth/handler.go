@@ -3,29 +3,25 @@ package auth
 import (
 	"errors"
 	"log/slog"
-	"net"
 	"net/http"
+	"strings"
 	"template/api/internal/database"
 	apihttp "template/api/internal/http"
 	"time"
 )
 
-const SessionCookieName = "session_token"
-
 type Config struct {
-	CookieSecure bool
-	SessionTTL   time.Duration
+	JWTSecret string
+	JWTTTL    time.Duration
 }
 
 type Handler struct {
-	service      service
-	cookieSecure bool
+	service service
 }
 
 func NewHandler(store Store, cfg Config) *Handler {
 	return &Handler{
-		service:      service{store: store, sessionTTL: cfg.SessionTTL},
-		cookieSecure: cfg.CookieSecure,
+		service: service{store: store, jwtSecret: []byte(cfg.JWTSecret), jwtTTL: cfg.JWTTTL},
 	}
 }
 
@@ -36,7 +32,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, token, err := h.service.register(r.Context(), input.Name, input.Email, input.Password, requestMetadata(r))
+	result, err := h.service.register(r.Context(), input.Name, input.Email, input.Password)
 	var invalid *validationError
 	switch {
 	case errors.As(err, &invalid):
@@ -51,7 +47,6 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setSessionCookie(w, token)
 	apihttp.WriteJSON(w, http.StatusCreated, result)
 }
 
@@ -62,75 +57,53 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, token, err := h.service.signIn(r.Context(), input.Email, input.Password, requestMetadata(r))
+	result, err := h.service.signIn(r.Context(), input.Email, input.Password)
 	if errors.Is(err, ErrInvalidCredentials) {
 		apihttp.WriteError(w, http.StatusUnauthorized, "INVALID_EMAIL_OR_PASSWORD", "Invalid email or password")
 		return
 	}
 	if err != nil {
-		slog.Error("create session", "error", err)
+		slog.Error("sign in", "error", err)
 		apihttp.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Could not sign in")
 		return
 	}
 
-	h.setSessionCookie(w, token)
 	apihttp.WriteJSON(w, http.StatusOK, result)
 }
 
-func (h *Handler) SignOut(w http.ResponseWriter, r *http.Request) {
-	if cookie, err := r.Cookie(SessionCookieName); err == nil {
-		if err := h.service.store.DeleteSession(r.Context(), cookie.Value); err != nil {
-			slog.Error("delete session", "error", err)
-			apihttp.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Could not sign out")
-			return
-		}
-	}
-
-	http.SetCookie(w, &http.Cookie{Name: SessionCookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteLaxMode})
+func (h *Handler) SignOut(w http.ResponseWriter, _ *http.Request) {
 	apihttp.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
-	result, ok := h.authenticatedSession(r)
+	user, ok := h.authenticatedUser(r)
 	if !ok {
 		apihttp.WriteJSON(w, http.StatusOK, nil)
 		return
 	}
-	apihttp.WriteJSON(w, http.StatusOK, result)
+	apihttp.WriteJSON(w, http.StatusOK, map[string]database.User{"user": user})
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	result, ok := h.authenticatedSession(r)
+	user, ok := h.authenticatedUser(r)
 	if !ok {
 		apihttp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
 		return
 	}
-	apihttp.WriteJSON(w, http.StatusOK, map[string]database.User{"user": result.User})
+	apihttp.WriteJSON(w, http.StatusOK, map[string]database.User{"user": user})
 }
 
-func (h *Handler) authenticatedSession(r *http.Request) (database.AuthSession, bool) {
-	cookie, err := r.Cookie(SessionCookieName)
-	if err != nil || cookie.Value == "" {
-		return database.AuthSession{}, false
+func (h *Handler) authenticatedUser(r *http.Request) (database.User, bool) {
+	scheme, token, ok := strings.Cut(r.Header.Get("Authorization"), " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") || token == "" {
+		return database.User{}, false
 	}
-	result, err := h.service.store.Session(r.Context(), cookie.Value)
+	user, err := h.service.authenticate(r.Context(), token)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			slog.Error("load session", "error", err)
+			slog.Debug("reject bearer token", "error", err)
 		}
-		return database.AuthSession{}, false
+		return database.User{}, false
 	}
-	return result, true
-}
-
-func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
-	http.SetCookie(w, &http.Cookie{Name: SessionCookieName, Value: token, Path: "/", MaxAge: int(h.service.sessionTTL.Seconds()), HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteLaxMode})
-}
-
-func requestMetadata(r *http.Request) database.SessionMetadata {
-	ipAddress, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ipAddress = r.RemoteAddr
-	}
-	return database.SessionMetadata{IPAddress: ipAddress, UserAgent: r.UserAgent()}
+	return user, true
 }
